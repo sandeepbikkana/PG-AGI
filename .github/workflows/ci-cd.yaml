@@ -88,6 +88,6 @@ jobs:
         terraform init
         terraform apply -auto-approve \
           -var="frontend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}" \
-          -var="backend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}"
-          -var="alert_email=sandeepbikkana@gmail.com" \
-          
+          -var="backend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}"   \
+          -var="alert_email=${{ secrets.ALERT_EMAIL }}"
+
