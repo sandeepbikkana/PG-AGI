@@ -245,14 +245,13 @@ resource "aws_ecs_service" "backend" {
 }
 
 ####################
-# CLOUDWATCH DASHBOARD (FRONTEND + BACKEND)
+# CLOUDWATCH DASHBOARD (FINAL, VALID)
 ####################
 resource "aws_cloudwatch_dashboard" "ecs" {
   dashboard_name = "${var.project_name}-dashboard"
 
   dashboard_body = jsonencode({
     widgets = [
-      # ---------- Frontend CPU ----------
       {
         type   = "metric"
         x      = 0
@@ -269,14 +268,12 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "CPUUtilization",
-              "ClusterName", PG-AGI-cluster,
-              "ServiceName", frontend
+              "ClusterName", aws_ecs_cluster.this.name,
+              "ServiceName", aws_ecs_service.frontend.name
             ]
           ]
         }
       },
-
-      # ---------- Backend CPU ----------
       {
         type   = "metric"
         x      = 12
@@ -293,14 +290,12 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "CPUUtilization",
-              "ClusterName", PG-AGI-cluster,
-              "ServiceName", backend
+              "ClusterName", aws_ecs_cluster.this.name,
+              "ServiceName", aws_ecs_service.backend.name
             ]
           ]
         }
       },
-
-      # ---------- Frontend Memory ----------
       {
         type   = "metric"
         x      = 0
@@ -317,14 +312,12 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "MemoryUtilization",
-              "ClusterName", PG-AGI-cluster,
-              "ServiceName", frontend
+              "ClusterName", aws_ecs_cluster.this.name,
+              "ServiceName", aws_ecs_service.frontend.name
             ]
           ]
         }
       },
-
-      # ---------- Backend Memory ----------
       {
         type   = "metric"
         x      = 12
@@ -341,8 +334,8 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "MemoryUtilization",
-              "ClusterName", PG-AGI-cluster,
-              "ServiceName", backend
+              "ClusterName", aws_ecs_cluster.this.name,
+              "ServiceName", aws_ecs_service.backend.name
             ]
           ]
         }
@@ -350,6 +343,7 @@ resource "aws_cloudwatch_dashboard" "ecs" {
     ]
   })
 }
+
 
 
 ####################
