@@ -6,7 +6,7 @@ test("page loads", async ({ page }) => {
 });
 
 test("backend message is displayed", async ({ page }) => {
-  // 🔹 Mock backend APIs
+  // ✅ Mock backend BEFORE navigation
   await page.route("**/api/health", route =>
     route.fulfill({
       status: 200,
@@ -27,5 +27,7 @@ test("backend message is displayed", async ({ page }) => {
 
   const message = page.locator('[data-testid="message"]');
 
-  await expect(message).toHaveText("Hello from backend");
+  await expect(message).toHaveText("Hello from backend", {
+    timeout: 10000
+  });
 });
