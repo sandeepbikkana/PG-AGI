@@ -6,8 +6,8 @@ test("page loads", async ({ page }) => {
 });
 
 test("backend message is displayed", async ({ page }) => {
-  // ✅ Mock backend BEFORE navigation
-  await page.route("**/api/health", route =>
+  // 🔹 Mock health endpoint (both variants)
+  await page.route("**/health", route =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -15,7 +15,8 @@ test("backend message is displayed", async ({ page }) => {
     })
   );
 
-  await page.route("**/api/message", route =>
+  // 🔹 Mock message endpoint (both variants)
+  await page.route("**/message", route =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -26,8 +27,5 @@ test("backend message is displayed", async ({ page }) => {
   await page.goto("http://localhost:3000");
 
   const message = page.locator('[data-testid="message"]');
-
-  await expect(message).toHaveText("Hello from backend", {
-    timeout: 10000
-  });
+  await expect(message).toHaveText("Hello from backend");
 });
