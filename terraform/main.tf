@@ -245,25 +245,23 @@ resource "aws_ecs_service" "backend" {
 }
 
 ####################
-# CLOUDWATCH DASHBOARD
-####################
-####################
-# CLOUDWATCH DASHBOARD (FIXED)
+# CLOUDWATCH DASHBOARD (FRONTEND + BACKEND)
 ####################
 resource "aws_cloudwatch_dashboard" "ecs" {
   dashboard_name = "${var.project_name}-dashboard"
 
   dashboard_body = jsonencode({
     widgets = [
+      # ---------- Frontend CPU ----------
       {
-        type = "metric"
-        x    = 0
-        y    = 0
+        type   = "metric"
+        x      = 0
+        y      = 0
         width  = 12
         height = 6
         properties = {
           region = var.aws_region
-          title  = "ECS CPU Utilization"
+          title  = "Frontend CPU Utilization"
           period = 300
           stat   = "Average"
           annotations = {}
@@ -271,21 +269,47 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "CPUUtilization",
-              "ClusterName",
-              aws_ecs_cluster.this.name
+              "ClusterName", aws_ecs_cluster.this.name,
+              "ServiceName", aws_ecs_service.frontend.name
             ]
           ]
         }
       },
+
+      # ---------- Backend CPU ----------
       {
-        type = "metric"
-        x    = 12
-        y    = 0
+        type   = "metric"
+        x      = 12
+        y      = 0
         width  = 12
         height = 6
         properties = {
           region = var.aws_region
-          title  = "ECS Memory Utilization"
+          title  = "Backend CPU Utilization"
+          period = 300
+          stat   = "Average"
+          annotations = {}
+          metrics = [
+            [
+              "AWS/ECS",
+              "CPUUtilization",
+              "ClusterName", aws_ecs_cluster.this.name,
+              "ServiceName", aws_ecs_service.backend.name
+            ]
+          ]
+        }
+      },
+
+      # ---------- Frontend Memory ----------
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          region = var.aws_region
+          title  = "Frontend Memory Utilization"
           period = 300
           stat   = "Average"
           annotations = {}
@@ -293,8 +317,32 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "MemoryUtilization",
-              "ClusterName",
-              aws_ecs_cluster.this.name
+              "ClusterName", aws_ecs_cluster.this.name,
+              "ServiceName", aws_ecs_service.frontend.name
+            ]
+          ]
+        }
+      },
+
+      # ---------- Backend Memory ----------
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          region = var.aws_region
+          title  = "Backend Memory Utilization"
+          period = 300
+          stat   = "Average"
+          annotations = {}
+          metrics = [
+            [
+              "AWS/ECS",
+              "MemoryUtilization",
+              "ClusterName", aws_ecs_cluster.this.name,
+              "ServiceName", aws_ecs_service.backend.name
             ]
           ]
         }
@@ -302,6 +350,7 @@ resource "aws_cloudwatch_dashboard" "ecs" {
     ]
   })
 }
+
 
 ####################
 # ALERTING (CPU > 70%)
