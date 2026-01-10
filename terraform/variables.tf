@@ -17,5 +17,6 @@ variable "backend_image" {
 }
 
 variable "alert_email" {
+  type = string
   description = "Email address for SNS alerts"
 }
