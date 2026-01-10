@@ -3,9 +3,7 @@
 ####################
 resource "aws_vpc" "this" {
   cidr_block = "10.0.0.0/16"
-  tags = {
-    Name = "${var.project_name}-vpc"
-  }
+  tags = { Name = "${var.project_name}-vpc" }
 }
 
 data "aws_availability_zones" "azs" {}
@@ -86,7 +84,7 @@ resource "aws_security_group" "ecs" {
 }
 
 ####################
-# IAM
+# IAM (Least Privilege)
 ####################
 resource "aws_iam_role" "ecs_exec" {
   name = "${var.project_name}-ecs-exec"
@@ -129,10 +127,6 @@ resource "aws_lb_target_group" "frontend" {
   protocol    = "HTTP"
   vpc_id      = aws_vpc.this.id
   target_type = "ip"
-
-  health_check {
-    path = "/"
-  }
 }
 
 resource "aws_lb_target_group" "backend" {
@@ -168,9 +162,7 @@ resource "aws_lb_listener_rule" "api" {
   }
 
   condition {
-    path_pattern {
-      values = ["/api/*"]
-    }
+    path_pattern { values = ["/api/*"] }
   }
 }
 
@@ -210,7 +202,7 @@ resource "aws_ecs_task_definition" "backend" {
 }
 
 ####################
-# ECS SERVICES (HA + ZERO DOWNTIME)
+# ECS SERVICES (HA)
 ####################
 resource "aws_ecs_service" "frontend" {
   name            = "frontend"
@@ -230,10 +222,6 @@ resource "aws_ecs_service" "frontend" {
     container_name   = "frontend"
     container_port   = 3000
   }
-
-  depends_on = [
-    aws_lb_listener.http
-  ]
 }
 
 resource "aws_ecs_service" "backend" {
@@ -254,9 +242,64 @@ resource "aws_ecs_service" "backend" {
     container_name   = "backend"
     container_port   = 8000
   }
+}
 
-  depends_on = [
-    aws_lb_listener.http,
-    aws_lb_listener_rule.api
-  ]
+####################
+# CLOUDWATCH DASHBOARD
+####################
+resource "aws_cloudwatch_dashboard" "ecs" {
+  dashboard_name = "${var.project_name}-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type = "metric"
+        properties = {
+          metrics = [["AWS/ECS", "CPUUtilization", "ClusterName", aws_ecs_cluster.this.name]]
+          period  = 300
+          stat    = "Average"
+          title   = "ECS CPU"
+        }
+      },
+      {
+        type = "metric"
+        properties = {
+          metrics = [["AWS/ECS", "MemoryUtilization", "ClusterName", aws_ecs_cluster.this.name]]
+          period  = 300
+          stat    = "Average"
+          title   = "ECS Memory"
+        }
+      }
+    ]
+  })
+}
+
+####################
+# ALERTING (CPU > 70%)
+####################
+resource "aws_sns_topic" "alerts" {
+  name = "${var.project_name}-alerts"
+}
+
+resource "aws_sns_topic_subscription" "email" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+  alarm_name          = "${var.project_name}-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 70
+  evaluation_periods  = 1
+  period              = 300
+  statistic           = "Average"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.this.name
+  }
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
 }

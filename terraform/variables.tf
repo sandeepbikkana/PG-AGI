@@ -16,3 +16,6 @@ variable "backend_image" {
   description = "ECR image for backend"
 }
 
+variable "alert_email" {
+  description = "Email address for SNS alerts"
+}
