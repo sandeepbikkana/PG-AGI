@@ -107,3 +107,108 @@ export default function Home() {
     </div>
   );
 }
+
+
+
+
+// import { useState, useEffect } from "react";
+// import Head from "next/head";
+// import axios from "axios";
+
+// export default function Home() {
+//   const [message, setMessage] = useState("Loading...");
+//   const [status, setStatus] = useState("");
+
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         // ✅ Correct health endpoint
+//         const healthCheck = await axios.get(
+//           `${process.env.NEXT_PUBLIC_API_URL}/api/health`
+//         );
+
+//         if (healthCheck.data.status === "ok") {
+//           setStatus("Backend is connected!");
+
+//           const response = await axios.get(
+//             `${process.env.NEXT_PUBLIC_API_URL}/api/message`
+//           );
+
+//           setMessage(response.data.message);
+//         }
+//       } catch (error) {
+//         setStatus("Backend connection failed");
+//         setMessage("Failed to connect to the backend");
+//         console.error(error);
+//       }
+//     };
+
+//     fetchData();
+//   }, []);
+
+//   return (
+//     <div className="container">
+//       <Head>
+//         <title>DevOps Assignment</title>
+//         <meta
+//           name="description"
+//           content="DevOps Assignment with FastAPI and Next.js"
+//         />
+//       </Head>
+
+//       <main>
+//         <h1>DevOps Assignment</h1>
+
+//         <div className="status">
+//           <p>
+//             Status:{" "}
+//             <span
+//               data-testid="status"
+//               className={status.includes("connected") ? "success" : "error"}
+//             >
+//               {status}
+//             </span>
+//           </p>
+//         </div>
+
+//         <div className="message-box">
+//           <h2>Backend Message:</h2>
+
+//           {/* ✅ ALWAYS rendered and testable */}
+//           <p data-testid="message">{message}</p>
+//         </div>
+
+//         <div className="info">
+//           <p>Backend URL: {process.env.NEXT_PUBLIC_API_URL}</p>
+//         </div>
+//       </main>
+
+//       <style jsx>{`
+//         .container {
+//           min-height: 100vh;
+//           display: flex;
+//           justify-content: center;
+//           align-items: center;
+//         }
+//         main {
+//           text-align: center;
+//           max-width: 700px;
+//         }
+//         .message-box {
+//           margin-top: 2rem;
+//           padding: 1.5rem;
+//           border: 1px solid #eaeaea;
+//           border-radius: 10px;
+//         }
+//         .success {
+//           color: #0070f3;
+//           font-weight: bold;
+//         }
+//         .error {
+//           color: #ff0000;
+//           font-weight: bold;
+//         }
+//       `}</style>
+//     </div>
+//   );
+// }
