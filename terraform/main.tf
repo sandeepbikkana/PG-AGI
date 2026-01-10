@@ -370,7 +370,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   namespace           = "AWS/ECS"
 
   dimensions = {
-    ClusterName = PG-AGI-cluster
+    ClusterName = aws_ecs_cluster.this.name
   }
 
   alarm_actions = [aws_sns_topic.alerts.arn]
