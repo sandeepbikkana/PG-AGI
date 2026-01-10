@@ -29,6 +29,23 @@ jobs:
         | docker login --username AWS --password-stdin \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
+    
+    - name: Run Backend Unit Tests
+      run: |
+        cd backend
+        python -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+        pytest
+        
+        
+    - name: Run Frontend E2E Tests
+      run: |
+        cd frontend
+        npm ci
+        npx playwright install --with-deps
+        npm run test:e2e
+    
     # ----------------------------
     # Build & Push Backend
     # ----------------------------
