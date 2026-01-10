@@ -269,8 +269,8 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "CPUUtilization",
-              "ClusterName", aws_ecs_cluster.this.name,
-              "ServiceName", aws_ecs_service.frontend.name
+              "ClusterName", PG-AGI-cluster,
+              "ServiceName", frontend
             ]
           ]
         }
@@ -293,8 +293,8 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "CPUUtilization",
-              "ClusterName", aws_ecs_cluster.this.name,
-              "ServiceName", aws_ecs_service.backend.name
+              "ClusterName", PG-AGI-cluster,
+              "ServiceName", backend
             ]
           ]
         }
@@ -317,8 +317,8 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "MemoryUtilization",
-              "ClusterName", aws_ecs_cluster.this.name,
-              "ServiceName", aws_ecs_service.frontend.name
+              "ClusterName", PG-AGI-cluster,
+              "ServiceName", frontend
             ]
           ]
         }
@@ -341,8 +341,8 @@ resource "aws_cloudwatch_dashboard" "ecs" {
             [
               "AWS/ECS",
               "MemoryUtilization",
-              "ClusterName", aws_ecs_cluster.this.name,
-              "ServiceName", aws_ecs_service.backend.name
+              "ClusterName", PG-AGI-cluster,
+              "ServiceName", backend
             ]
           ]
         }
@@ -376,7 +376,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   namespace           = "AWS/ECS"
 
   dimensions = {
-    ClusterName = aws_ecs_cluster.this.name
+    ClusterName = PG-AGI-cluster
   }
 
   alarm_actions = [aws_sns_topic.alerts.arn]
