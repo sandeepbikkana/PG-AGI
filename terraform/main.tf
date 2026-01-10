@@ -247,6 +247,9 @@ resource "aws_ecs_service" "backend" {
 ####################
 # CLOUDWATCH DASHBOARD
 ####################
+####################
+# CLOUDWATCH DASHBOARD (FIXED)
+####################
 resource "aws_cloudwatch_dashboard" "ecs" {
   dashboard_name = "${var.project_name}-dashboard"
 
@@ -254,20 +257,46 @@ resource "aws_cloudwatch_dashboard" "ecs" {
     widgets = [
       {
         type = "metric"
+        x    = 0
+        y    = 0
+        width  = 12
+        height = 6
         properties = {
-          metrics = [["AWS/ECS", "CPUUtilization", "ClusterName", aws_ecs_cluster.this.name]]
-          period  = 300
-          stat    = "Average"
-          title   = "ECS CPU"
+          region = var.aws_region
+          title  = "ECS CPU Utilization"
+          period = 300
+          stat   = "Average"
+          annotations = {}
+          metrics = [
+            [
+              "AWS/ECS",
+              "CPUUtilization",
+              "ClusterName",
+              aws_ecs_cluster.this.name
+            ]
+          ]
         }
       },
       {
         type = "metric"
+        x    = 12
+        y    = 0
+        width  = 12
+        height = 6
         properties = {
-          metrics = [["AWS/ECS", "MemoryUtilization", "ClusterName", aws_ecs_cluster.this.name]]
-          period  = 300
-          stat    = "Average"
-          title   = "ECS Memory"
+          region = var.aws_region
+          title  = "ECS Memory Utilization"
+          period = 300
+          stat   = "Average"
+          annotations = {}
+          metrics = [
+            [
+              "AWS/ECS",
+              "MemoryUtilization",
+              "ClusterName",
+              aws_ecs_cluster.this.name
+            ]
+          ]
         }
       }
     ]
