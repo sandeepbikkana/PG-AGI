@@ -171,7 +171,7 @@ jobs:
       with:
         workload_identity_provider: "projects/246976321882/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
         service_account: "github-ci@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
-        token_format: "access_token"
+        
 
     - name: Setup gcloud
       uses: google-github-actions/setup-gcloud@v2
