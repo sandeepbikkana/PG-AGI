@@ -248,7 +248,7 @@ jobs:
           -var="backend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}" \
           -var="alert_email=${{ secrets.ALERT_EMAIL }}"
 
-    # ----------------------------
+    # -------------------------
     # TERRAFORM GCP
     # --------------------------
     - name: Terraform Apply (GCP)
