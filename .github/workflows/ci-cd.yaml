@@ -118,7 +118,6 @@ jobs:
       # ---------- GCP ----------
       GCP_REGION: asia-south1
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-
       GCP_FRONTEND_REPO: frontend
       GCP_BACKEND_REPO: backend
 
@@ -128,24 +127,6 @@ jobs:
     # ----------------------------
     - name: Checkout
       uses: actions/checkout@v4
-
-    # ----------------------------
-    # TESTS
-    # # ----------------------------
-    # - name: Backend Unit Tests
-    #   run: |
-    #     cd backend
-    #     python -m venv venv
-    #     source venv/bin/activate
-    #     pip install -r requirements.txt
-    #     pytest
-
-    # - name: Frontend E2E Tests
-    #   run: |
-    #     cd frontend
-    #     npm ci
-    #     npx playwright install --with-deps
-    #     npm run test:e2e
 
     # ----------------------------
     # AWS AUTH
@@ -164,24 +145,30 @@ jobs:
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
     # ----------------------------
-    # GCP AUTH (WIF — NO KEYS)
+    # GCP AUTH (WORKING CONFIG)
     # ----------------------------
     - name: Authenticate to GCP (Workload Identity)
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: "projects/246976321882/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
         service_account: "github-ci@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
-        
+        export_environment_variables: true
 
     - name: Setup gcloud
       uses: google-github-actions/setup-gcloud@v2
+
+    # ----------------------------
+    # RESET + CONFIGURE DOCKER (CRITICAL)
+    # ----------------------------
+    - name: Reset Docker auth
+      run: rm -f ~/.docker/config.json
 
     - name: Configure Docker for Artifact Registry
       run: |
         gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet
 
-    # ---------------------------
-    # BUILD IMAGES (ONCE)
+    # ----------------------------
+    # BUILD IMAGES
     # ----------------------------
     - name: Build Backend Image
       run: docker build -t backend ./backend
@@ -196,14 +183,14 @@ jobs:
     # ----------------------------
     # PUSH TO AWS ECR
     # ----------------------------
-    - name: Push Backend to AWS ECR
+    - name: Push Backend to AWS
       run: |
         docker tag backend:latest \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
         docker push \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
 
-    - name: Push Frontend to AWS ECR
+    - name: Push Frontend to AWS
       run: |
         docker tag frontend:latest \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}
@@ -211,17 +198,16 @@ jobs:
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}
 
     # ----------------------------
-    # PUSH TO GCP ARTIFACT REGISTRY
+    # PUSH TO GCP ARTIFACT REGISTRY (WORKS)
     # ----------------------------
-    - name: Push Backend to GCP Artifact Registry
+    - name: Push Backend to GCP
       run: |
         docker tag backend:latest \
           asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
         docker push \
           asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
-          
 
-    - name: Push Frontend to GCP Artifact Registry
+    - name: Push Frontend to GCP
       run: |
         docker tag frontend:latest \
           asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
@@ -229,16 +215,13 @@ jobs:
           asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
 
     # ----------------------------
-    # TERRAFORM SETUP
+    # TERRAFORM
     # ----------------------------
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.6
 
-    # ----------------------------
-    # TERRAFORM AWS
-    # ----------------------------
     - name: Terraform Apply (AWS)
       run: |
         cd terraform/aws
@@ -248,9 +231,6 @@ jobs:
           -var="backend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}" \
           -var="alert_email=${{ secrets.ALERT_EMAIL }}"
 
-    # -------------------------
-    # TERRAFORM GCP
-    # ------------------------
     - name: Terraform Apply (GCP)
       run: |
         cd terraform/gcp
