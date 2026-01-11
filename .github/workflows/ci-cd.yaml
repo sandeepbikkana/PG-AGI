@@ -138,14 +138,8 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Login to Amazon ECR
-      run: |
-        aws ecr get-login-password --region $AWS_REGION \
-        | docker login --username AWS --password-stdin \
-          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-
     # ----------------------------
-    # GCP AUTH (WORKING CONFIG)
+    # GCP AUTH (WIF)
     # ----------------------------
     - name: Authenticate to GCP (Workload Identity)
       uses: google-github-actions/auth@v2
@@ -158,11 +152,23 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
 
     # ----------------------------
-    # RESET + CONFIGURE DOCKER (CRITICAL)
+    # RESET DOCKER AUTH (ONCE)
     # ----------------------------
     - name: Reset Docker auth
       run: rm -f ~/.docker/config.json
 
+    # ----------------------------
+    # LOGIN TO AWS ECR
+    # ----------------------------
+    - name: Login to Amazon ECR
+      run: |
+        aws ecr get-login-password --region $AWS_REGION \
+        | docker login --username AWS --password-stdin \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+    # ----------------------------
+    # LOGIN TO GCP ARTIFACT REGISTRY
+    # ----------------------------
     - name: Configure Docker for Artifact Registry
       run: |
         gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet
@@ -183,14 +189,14 @@ jobs:
     # ----------------------------
     # PUSH TO AWS ECR
     # ----------------------------
-    - name: Push Backend to AWS
+    - name: Push Backend to AWS ECR
       run: |
         docker tag backend:latest \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
         docker push \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
 
-    - name: Push Frontend to AWS
+    - name: Push Frontend to AWS ECR
       run: |
         docker tag frontend:latest \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}
@@ -198,16 +204,16 @@ jobs:
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}
 
     # ----------------------------
-    # PUSH TO GCP ARTIFACT REGISTRY (WORKS)
+    # PUSH TO GCP ARTIFACT REGISTRY
     # ----------------------------
-    - name: Push Backend to GCP
+    - name: Push Backend to GCP Artifact Registry
       run: |
         docker tag backend:latest \
           asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
         docker push \
           asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
 
-    - name: Push Frontend to GCP
+    - name: Push Frontend to GCP Artifact Registry
       run: |
         docker tag frontend:latest \
           asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
