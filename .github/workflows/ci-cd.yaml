@@ -101,7 +101,7 @@ name: Multi-Cloud CI/CD (AWS + GCP)
 on:
   push:
     branches: [ main ]
-    
+
 permissions:
   id-token: write
   contents: read
@@ -169,7 +169,7 @@ jobs:
     - name: Authenticate to GCP (Workload Identity)
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: "projects/project-ab1eb79e-27de-4c1a-801/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+        workload_identity_provider: "projects/246976321882/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
         service_account: "github-ci@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
 
     - name: Setup gcloud
