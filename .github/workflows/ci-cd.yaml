@@ -215,16 +215,17 @@ jobs:
     - name: Push Backend to GCP Artifact Registry
       run: |
         docker tag backend:latest \
-          asia-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
+          asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
         docker push \
-          asia-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
+          asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
+          
 
     - name: Push Frontend to GCP Artifact Registry
       run: |
         docker tag frontend:latest \
-          asia-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
+          asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
         docker push \
-          asia-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
+          asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
 
     # ----------------------------
     # TERRAFORM SETUP
@@ -255,6 +256,6 @@ jobs:
         terraform init
         terraform apply -auto-approve \
           -var="project_id=$GCP_PROJECT_ID" \
-          -var="frontend_image=asia-docker.pkg.dev/$GCP_PROJECT_ID/frontend/frontend:${{ github.sha }}" \
-          -var="backend_image=asia-docker.pkg.dev/$GCP_PROJECT_ID/backend/backend:${{ github.sha }}"
+          -var="frontend_image=asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/frontend/frontend:${{ github.sha }}" \
+          -var="backend_image=asia-south1-docker.pkg.dev/$GCP_PROJECT_ID/backend/backend:${{ github.sha }}" \
           -var="alert_email=${{ secrets.ALERT_EMAIL }}"
