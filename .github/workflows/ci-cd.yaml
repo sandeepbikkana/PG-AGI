@@ -155,14 +155,14 @@ jobs:
     - name: Set GCP project
       run: |
         gcloud config set project $GCP_PROJECT_ID
-        
+
     # ----------------------------
     # RESET DOCKER AUTH (ONCE)
     # ----------------------------
     - name: Reset Docker auth
       run: rm -f ~/.docker/config.json
 
-    # ----------------------------
+    # -------------------------
     # LOGIN TO AWS ECR
     # ----------------------------
     - name: Login to Amazon ECR
