@@ -155,6 +155,7 @@ jobs:
     - name: Set GCP project
       run: |
         gcloud config set project $GCP_PROJECT_ID
+        
     # ----------------------------
     # RESET DOCKER AUTH (ONCE)
     # ----------------------------
