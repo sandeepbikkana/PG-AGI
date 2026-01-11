@@ -1,4 +1,102 @@
-name: AWS CI/CD
+# name: AWS CI/CD
+
+# on:
+#   push:
+#     branches: [ main ]
+
+# jobs:
+#   build-push-deploy:
+#     runs-on: ubuntu-latest
+
+#     env:
+#       AWS_REGION: ap-south-1
+#       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+#     steps:
+#     - name: Checkout
+#       uses: actions/checkout@v4
+
+#     - name: Configure AWS Credentials
+#       uses: aws-actions/configure-aws-credentials@v4
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: ${{ env.AWS_REGION }}
+
+#     - name: Login to Amazon ECR
+#       run: |
+#         aws ecr get-login-password --region $AWS_REGION \
+#         | docker login --username AWS --password-stdin \
+#           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+    
+#     - name: Run Backend Unit Tests
+#       run: |
+#         cd backend
+#         python -m venv venv
+#         source venv/bin/activate
+#         pip install -r requirements.txt
+#         export PYTHONPATH=$PWD
+#         pytest
+    
+        
+#     - name: Run Frontend E2E Tests
+#       run: |
+#         cd frontend
+#         npm ci
+#         npx playwright install --with-deps
+#         npm run test:e2e
+    
+#     # ----------------------------
+#     # Build & Push Backend
+#     # ----------------------------
+#     - name: Build & Push Backend Image
+#       run: |
+#         docker build -t backend ./backend
+#         docker tag backend:latest \
+#           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
+#         docker push \
+#           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
+
+#     # ----------------------------
+#     # Build & Push Frontend
+#     # ----------------------------
+#     - name: Build & Push Frontend Image
+#       run: |
+#         docker build \
+#           --no-cache \
+#           --build-arg NEXT_PUBLIC_API_URL=/api \
+#           -t frontend ./frontend
+#         docker tag frontend:latest \
+#           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}
+#         docker push \
+#           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}
+
+
+#     # ----------------------------
+#     # Terraform Deploy
+#     # ----------------------------
+
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.6.6
+
+#     - name: Terraform Init & Apply
+#       run: |
+#         cd terraform
+#         terraform init
+#         terraform apply -auto-approve \
+#           -var="frontend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}" \
+#           -var="backend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}"   \
+#           -var="alert_email=${{ secrets.ALERT_EMAIL }}"
+
+
+
+
+
+
+name: Multi-Cloud CI/CD (AWS + GCP)
 
 on:
   push:
@@ -9,13 +107,45 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # ---------- AWS ----------
       AWS_REGION: ap-south-1
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
+      # ---------- GCP ----------
+      GCP_REGION: asia-south1
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
+      GCP_FRONTEND_REPO: frontend
+      GCP_BACKEND_REPO: backend
+
     steps:
+    # ----------------------------
+    # Checkout
+    # ----------------------------
     - name: Checkout
       uses: actions/checkout@v4
 
+    # ----------------------------
+    # TESTS
+    # # ----------------------------
+    # - name: Backend Unit Tests
+    #   run: |
+    #     cd backend
+    #     python -m venv venv
+    #     source venv/bin/activate
+    #     pip install -r requirements.txt
+    #     pytest
+
+    # - name: Frontend E2E Tests
+    #   run: |
+    #     cd frontend
+    #     npm ci
+    #     npx playwright install --with-deps
+    #     npm run test:e2e
+
+    # ----------------------------
+    # AWS AUTH
+    # ----------------------------
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -29,65 +159,98 @@ jobs:
         | docker login --username AWS --password-stdin \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-    
-    - name: Run Backend Unit Tests
-      run: |
-        cd backend
-        python -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
-        export PYTHONPATH=$PWD
-        pytest
-    
-        
-    - name: Run Frontend E2E Tests
-      run: |
-        cd frontend
-        npm ci
-        npx playwright install --with-deps
-        npm run test:e2e
-    
     # ----------------------------
-    # Build & Push Backend
+    # GCP AUTH (WIF — NO KEYS)
     # ----------------------------
-    - name: Build & Push Backend Image
+    - name: Authenticate to GCP (Workload Identity)
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: "projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+        service_account: "github-ci@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
+
+    - name: Setup gcloud
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker for Artifact Registry
       run: |
-        docker build -t backend ./backend
-        docker tag backend:latest \
-          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
-        docker push \
-          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
+        gcloud auth configure-docker asia-docker.pkg.dev --quiet
 
     # ----------------------------
-    # Build & Push Frontend
+    # BUILD IMAGES (ONCE)
     # ----------------------------
-    - name: Build & Push Frontend Image
+    - name: Build Backend Image
+      run: docker build -t backend ./backend
+
+    - name: Build Frontend Image
       run: |
         docker build \
           --no-cache \
           --build-arg NEXT_PUBLIC_API_URL=/api \
           -t frontend ./frontend
+
+    # ----------------------------
+    # PUSH TO AWS ECR
+    # ----------------------------
+    - name: Push Backend to AWS ECR
+      run: |
+        docker tag backend:latest \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
+        docker push \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}
+
+    - name: Push Frontend to AWS ECR
+      run: |
         docker tag frontend:latest \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}
         docker push \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}
 
+    # ----------------------------
+    # PUSH TO GCP ARTIFACT REGISTRY
+    # ----------------------------
+    - name: Push Backend to GCP Artifact Registry
+      run: |
+        docker tag backend:latest \
+          asia-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
+        docker push \
+          asia-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_BACKEND_REPO/backend:${{ github.sha }}
+
+    - name: Push Frontend to GCP Artifact Registry
+      run: |
+        docker tag frontend:latest \
+          asia-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
+        docker push \
+          asia-docker.pkg.dev/$GCP_PROJECT_ID/$GCP_FRONTEND_REPO/frontend:${{ github.sha }}
 
     # ----------------------------
-    # Terraform Deploy
+    # TERRAFORM SETUP
     # ----------------------------
-
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.6
 
-    - name: Terraform Init & Apply
+    # ----------------------------
+    # TERRAFORM AWS
+    # ----------------------------
+    - name: Terraform Apply (AWS)
       run: |
-        cd terraform
+        cd terraform/aws
         terraform init
         terraform apply -auto-approve \
           -var="frontend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend:${{ github.sha }}" \
-          -var="backend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}"   \
+          -var="backend_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend:${{ github.sha }}" \
           -var="alert_email=${{ secrets.ALERT_EMAIL }}"
 
+    # ----------------------------
+    # TERRAFORM GCP
+    # ----------------------------
+    - name: Terraform Apply (GCP)
+      run: |
+        cd terraform/gcp
+        terraform init
+        terraform apply -auto-approve \
+          -var="project_id=$GCP_PROJECT_ID" \
+          -var="frontend_image=asia-docker.pkg.dev/$GCP_PROJECT_ID/frontend/frontend:${{ github.sha }}" \
+          -var="backend_image=asia-docker.pkg.dev/$GCP_PROJECT_ID/backend/backend:${{ github.sha }}"
+          -var="alert_email=${{ secrets.ALERT_EMAIL }}"

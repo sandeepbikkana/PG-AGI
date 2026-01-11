@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 1.5"
 
   backend "gcs" {
-    bucket  = "pg-agi-terraform-state"
+    bucket  = "pg-agi-buck"
     prefix  = "cloudrun/dev"
   }
 
