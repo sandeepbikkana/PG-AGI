@@ -250,7 +250,7 @@ jobs:
 
     # -------------------------
     # TERRAFORM GCP
-    # --------------------------
+    # ------------------------
     - name: Terraform Apply (GCP)
       run: |
         cd terraform/gcp
